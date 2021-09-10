@@ -4,7 +4,7 @@ Citus is an open source extension that transforms Postgres into a distributed da
 
 (The benefit of using **Citus docker image** is that it already has the Citus extention and configuration in Postgre, you don't need to install it, configure the postgresql.conf(`shared_preload_libraries ='citus'`) or create extension(`CREATE EXTENSION citus;`))
 
-![image](uploads/cef25c24c908208cae0755deb37ecc5f/image.png)
+![Capture10](https://user-images.githubusercontent.com/45960127/132826014-eda8cc50-8655-400c-94d0-09dd8555ab92.PNG)
 
 `docker run -d --name citus_master -p 5432:5432 -e POSTGRES_PASSWORD=mypass citusdata/citus:10.1` 
 
@@ -44,12 +44,12 @@ After the restart process, just go to the **coordinator node** to add the worker
 
 In the coordinator node, you can see the following result:
 
-![image](uploads/d87e8788a0a28e35bfe446d1192d4380/image.png)
+![Capture11](https://user-images.githubusercontent.com/45960127/132826054-036e782f-47c1-4120-adb7-ef5a11c7d8b4.PNG)
 
 In the worker nodes, you can see the following result:
 
-![image](uploads/e47a756e7b1f2fcd461b2a9df4d4b11a/image.png)
-![image](uploads/53140dcd408af9762976168664da668b/image.png)
+![Capture12](https://user-images.githubusercontent.com/45960127/132826083-e680e5b5-9257-4db6-b5b8-d9e79d6b0b27.PNG)
+![Capture13](https://user-images.githubusercontent.com/45960127/132826089-a4981934-ca63-42a4-af27-04f5118ff54d.PNG)
 
 In **every machine** do the following command for a cluster physical backup, using `pg_basebackup` (for backup):
 

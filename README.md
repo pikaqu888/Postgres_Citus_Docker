@@ -1,7 +1,7 @@
 ## Create Citus Cluster
 Citus is an open source extension that transforms Postgres into a distributed database. The docker image is based on the official PostgreSQL image. Here will use **citusdata/citus:10.1** which uses **PostgreSQL 13.4** as an example, and create a cluster with **one coordinator** node and **two worker nodes** in different machines:
 
-(The benefit of using **Citus docker image** is that it already has the Citus extention and configuration in Postgre, you don't need to install it, configure the postgresql.conf(`shared_preload_libraries ='citus'`) or create extension(`CREATE EXTENSION citus;`))
+(The benefit of using **Citus docker image** is that it already has the Citus extention and configuration in Postgre, you don't need to install it, configure the postgresql.conf(`shared_preload_libraries ='citus'`) or create extension(`CREATE EXTENSION citus;`) for more information: https://www.digitalocean.com/community/tutorials/how-to-set-up-continuous-archiving-and-perform-point-in-time-recovery-with-postgresql-12-on-ubuntu-20-04)
 
 ![Capture10](https://user-images.githubusercontent.com/45960127/133759612-99550c16-e760-4ac9-924f-f016f376dc68.PNG)
 
@@ -79,3 +79,23 @@ Enter to database:
 
 and `systemctl reload docker`
 ⚠
+
+## Restore Point-In-Time-Recovery on the Database Cluster
+
+For backup, don't forget the following commands to save the WAL files:
+
+`docker exec citus_master bash -c "mkdir /wal_archive; chown postgres.postgres /wal_archive"`
+
+`docker exec citus_master bash -c "psql -U postgres -c 'ALTER SYSTEM SET archive_mode = on;'"`
+
+`docker exec citus_master bash -c "psql -U postgres -c \"ALTER SYSTEM SET archive_command = 'test ! -f /wal_archive/%f && cp %p /wal_archive/%f';\""`
+
+`docker exec citus_master bash -c "psql -U postgres -c 'ALTER SYSTEM SET wal_level = replica;'"`
+
+For restore, add restore_command and recovery.signal for tringger and use the command in the normal backup process:
+
+`docker exec citus_master bash -c "psql -U postgres -c \"ALTER SYSTEM SET restore_command = 'cp /wal_archive/%f %p';\""`
+
+`docker exec citus_master bash -c "psql -U postgres -c \"ALTER SYSTEM SET recovery_target_timeline = 'latest';\""
+
+`docker exec citus_master bash -c "touch /var/lib/postgresql/data/recovery.signal; chown -R postgres:postgres /var/lib/postgresql/data; chmod 700 /var/lib/postgresql/data/recovery.signal"`

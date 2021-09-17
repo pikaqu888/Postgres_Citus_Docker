@@ -33,12 +33,12 @@ After the restart process, just go to the **coordinator node** to add the worker
 
 In the coordinator node, you can see the following result:
 
-![image](uploads/d87e8788a0a28e35bfe446d1192d4380/image.png)
+![Capture11](https://user-images.githubusercontent.com/45960127/133759737-33129594-f113-4d1c-9dce-f5139b42f5a4.PNG)
 
 In the worker nodes, you can see the following result:
 
-![Capture12](https://user-images.githubusercontent.com/45960127/133759638-407486c0-f7e8-45fa-80d3-5a0d436584fb.PNG)
-![Capture13](https://user-images.githubusercontent.com/45960127/133759643-b672594e-cb1f-4339-907f-527df9249e10.PNG)
+![Capture12](https://user-images.githubusercontent.com/45960127/133759778-b48c9211-fb5d-4b5e-ab03-081c71c1a890.PNG)
+![Capture13](https://user-images.githubusercontent.com/45960127/133759786-200a7221-adc7-42e3-9967-21988d94b651.PNG)
 
 ## Backup Citus Cluster
 

@@ -96,6 +96,6 @@ For restore, add restore_command and recovery.signal for tringger and use the co
 
 `docker exec citus_master bash -c "psql -U postgres -c \"ALTER SYSTEM SET restore_command = 'cp /wal_archive/%f %p';\""`
 
-`docker exec citus_master bash -c "psql -U postgres -c \"ALTER SYSTEM SET recovery_target_timeline = 'latest';\""
+`docker exec citus_master bash -c "psql -U postgres -c \"ALTER SYSTEM SET recovery_target_timeline = 'latest';\""`
 
 `docker exec citus_master bash -c "touch /var/lib/postgresql/data/recovery.signal; chown -R postgres:postgres /var/lib/postgresql/data; chmod 700 /var/lib/postgresql/data/recovery.signal"`

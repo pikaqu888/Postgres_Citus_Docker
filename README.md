@@ -1,10 +1,9 @@
-# Postgres_Citus_Docker
-## Create Citus Cluster and Backup
+## Create Citus Cluster
 Citus is an open source extension that transforms Postgres into a distributed database. The docker image is based on the official PostgreSQL image. Here will use **citusdata/citus:10.1** which uses **PostgreSQL 13.4** as an example, and create a cluster with **one coordinator** node and **two worker nodes** in different machines:
 
 (The benefit of using **Citus docker image** is that it already has the Citus extention and configuration in Postgre, you don't need to install it, configure the postgresql.conf(`shared_preload_libraries ='citus'`) or create extension(`CREATE EXTENSION citus;`))
 
-![Capture10](https://user-images.githubusercontent.com/45960127/132826014-eda8cc50-8655-400c-94d0-09dd8555ab92.PNG)
+![Capture10](https://user-images.githubusercontent.com/45960127/133759612-99550c16-e760-4ac9-924f-f016f376dc68.PNG)
 
 `docker run -d --name citus_master -p 5432:5432 -e POSTGRES_PASSWORD=mypass citusdata/citus:10.1` 
 
@@ -14,19 +13,9 @@ Citus is an open source extension that transforms Postgres into a distributed da
 
 Enter to **every container** and do the following commands:
 
-`docker exec citus_master bash -c "mkdir /wal_archive; chown postgres.postgres /wal_archive"` (to save the Write-Ahead Logging (WAL) files, for **backup**)
-
 `docker exec citus_master bash -c "head -n -1 var/lib/postgresql/data/pg_hba.conf > var/lib/postgresql/data/temp.conf; mv var/lib/postgresql/data/temp.conf var/lib/postgresql/data/pg_hba.conf"`
 
 `docker exec citus_master bash -c "echo -e \"host all all all trust\" >> var/lib/postgresql/data/pg_hba.conf"`
-
-Enter to database (for **backup**):
-
-`docker exec citus_master bash -c "psql -U postgres -c 'ALTER SYSTEM SET archive_mode = on;'"`
-
-`docker exec citus_master bash -c "psql -U postgres -c \"ALTER SYSTEM SET archive_command = 'test ! -f /wal_archive/%f && cp %p /wal_archive/%f';\""`
-
-`docker exec citus_master bash -c "psql -U postgres -c 'ALTER SYSTEM SET wal_level = replica;'"`
 
 **must** restart docker with `docker restart container_name`
 
@@ -44,38 +33,49 @@ After the restart process, just go to the **coordinator node** to add the worker
 
 In the coordinator node, you can see the following result:
 
-![Capture11](https://user-images.githubusercontent.com/45960127/132826054-036e782f-47c1-4120-adb7-ef5a11c7d8b4.PNG)
+![image](uploads/d87e8788a0a28e35bfe446d1192d4380/image.png)
 
 In the worker nodes, you can see the following result:
 
-![Capture12](https://user-images.githubusercontent.com/45960127/132826083-e680e5b5-9257-4db6-b5b8-d9e79d6b0b27.PNG)
-![Capture13](https://user-images.githubusercontent.com/45960127/132826089-a4981934-ca63-42a4-af27-04f5118ff54d.PNG)
+![Capture12](https://user-images.githubusercontent.com/45960127/133759638-407486c0-f7e8-45fa-80d3-5a0d436584fb.PNG)
+![Capture13](https://user-images.githubusercontent.com/45960127/133759643-b672594e-cb1f-4339-907f-527df9249e10.PNG)
+
+## Backup Citus Cluster
 
 In **every machine** do the following command for a cluster physical backup, using `pg_basebackup` (for backup):
 
-`docker exec -it citus_master pg_basebackup -U postgres -Ft -z -Xs -P -D /backup`
+`docker exec citus_master bash -c "pg_basebackup -U postgres -Xs -P -D /backup/'`date +\"%Y%m%d%H%M%S\"`'"`
 
-`docker cp backup/ citus_master:.`
+`docker exec citus_master bash -c "tar -czf $containerName.Backup.tar.gz backup/*"`
 
-`docker cp wal_archive/ citus_master:.`
+`docker cp citus_master:$containerName.Backup.tar.gz .`
 
 ## Restore Citus Cluster
-In **every machine** that has the physical backup, do the following commands:
+In **every machine** that will have the physical backup, do the following commands:
 
-`docker cp backup/ citus_master:.`
+`docker cp $containerName.Backup.tar.gz citus_master:.`
 
-`docker cp wal_archive/ citus_master:.`
-
-Enter to docker container:
-
-`docker exec citus_master bash -c "tar xzf backup/base.tar.gz -C /var/lib/postgresql/data/"`
-
-`docker exec citus_master bash -c "tar xzf backup/pg_wal.tar.gz -C /var/lib/postgresql/data/pg_wal"`
+`docker exec citus_master bash -c "tar -xzf $containerName.Backup.tar.gz"`
 
 Enter to database:
 
-`docker exec citus_master bash -c "psql -U postgres -c \"ALTER SYSTEM SET restore_command = 'cp /wal_archive/%f %p';\""`
+`docker exec citus_master bash -c "chown -R postgres:postgres backup/"`
 
-wait like 5 second
+`docker exec citus_master bash -c "rm -rf /var/lib/postgresql/data/*"`
 
-And restart all the containers, ⚠you will need to wait some time depending on the data size you have after the restart process to see the data⚠
+`docker exec citus_master bash -c "cp -r backup/$restoreTime/* /var/lib/postgresql/data/"`
+
+`docker exec citus_master bash -c "chown -R postgres:postgres /var/lib/postgresql/data/"`
+
+`sleep 60` 
+
+`docker restart citus_master`
+
+⚠If the container shuts down immediately after deleting the "data" file, add the configuration to the daemon configuration file. On Linux, this defaults to /etc/docker/daemon.json:
+
+`{
+  "live-restore": true
+}`
+
+and `systemctl reload docker`
+⚠
